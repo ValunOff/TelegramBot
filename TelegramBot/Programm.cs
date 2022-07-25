@@ -13,7 +13,7 @@ namespace TelegramBot
     class Programm
     {
         private static BotClient bot = new BotClient("5495390508:AAHi-SDCzmafeP9NTZOPdlaXbu5zfcGqdF4"); //ethiowalia_bot
-        static void Mainqwe()
+        static void Mainm()
         {
             bot.SetMyCommands(new BotCommand("calendar", "Telegram Calendar"));
             var updates = bot.GetUpdates();
@@ -26,7 +26,7 @@ namespace TelegramBot
                         switch (update.Type)
                         {
                             case UpdateType.Message:
-                                OnMessage(update.Message);
+                                //OnMessage(update.Message);
                                 break;
                             case UpdateType.CallbackQuery:
                                 OnCallbackQuery(update.CallbackQuery);
@@ -41,16 +41,17 @@ namespace TelegramBot
                 }
             }
         }
-        private static void OnMessage(Message message)
+        //public static void OnMessage(Message message)
+        public static void OnMessage(long id)
         {
-            if (message.Text.Contains("/calendar"))
+            //if (message.Text.Contains("/calendar"))
+            //{
+            var rm = new InlineKeyboardMarkup
             {
-                var rm = new InlineKeyboardMarkup
-                {
-                    InlineKeyboard = CreateCalendar(2021)
-                };
-                bot.SendMessage(message.Chat.Id, "🗓 <b>Telegram Bot Calendar</b> 🗓", parseMode: ParseMode.HTML, replyMarkup: rm);
-            }
+                InlineKeyboard = CreateCalendar(2021)
+            };
+            bot.SendMessage(id, "🗓 <b>Telegram Bot Calendar</b> 🗓", parseMode: ParseMode.HTML, replyMarkup: rm);
+            //}
         }
         private static void OnCallbackQuery(CallbackQuery query)
         {

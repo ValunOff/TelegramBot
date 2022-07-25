@@ -15,9 +15,10 @@ namespace TelegramBot
     {
         private const string Start = "/start";
         private const string Settings = "/settings";
+        private const string Calendar = "/calendar";
         private const string Password = "МашаМилаша"; //KEK
-        private const string Command1 = "Забронировать стол";
-        private const string Command2 = "Соц. Сети";
+        private const string bron = "/bron";
+        private const string social = "/social";
         private const string Command3 = "Добавить получателя заявок";
         private const string Command4 = "Список получателей заявок";
         private const string Command5 = "Добавить Соц. Сети";
@@ -34,9 +35,9 @@ namespace TelegramBot
                     UpdateType.Message
                 }
             };
-            
+            Console.WriteLine("Start");
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
-            
+
             Console.ReadLine();
         }
 
@@ -61,13 +62,13 @@ namespace TelegramBot
                         case Start:
                             await Bot.SendTextMessageAsync(id, "Здравствуй, давай перейдем сразу к делу!", replyMarkup: GetButtons());
                             break;
-                        case Command1:
+                        case bron:
                             booking.Status = 0;
                             //Бронь стола
                             await Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ");
                             //CalendarPicker.Program.Main(null);
                             break;
-                        case Command2:
+                        case social:
                             booking.Status = 0;
                             await Bot.SendTextMessageAsync(id, "VK: https://vk.com/ru_agronom");
                             //соцсети
@@ -77,7 +78,10 @@ namespace TelegramBot
                             break;
                         case Password:
                             booking.Status = 0;
-                            await Bot.SendTextMessageAsync(id, "Вы вошли в настройки",replyMarkup: GetSettingsButtons(id));
+                            await Bot.SendTextMessageAsync(id, "Вы вошли в настройки", replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case Calendar:
+                            Programm.OnMessage(id);
                             break;
                         default:
                             switch (booking.Status)
@@ -86,41 +90,82 @@ namespace TelegramBot
                                     regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
                                     if (regex.IsMatch(text))//Ввели дату брони
                                     {
-                                        booking.Status = 1;
-                                        booking.Date = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "Введите время брони, в формате ЧЧ:ММ");
+                                        DateTime dt = DateTime.Now;
+                                        DateTime tn;
+                                        DateTime.TryParse(text, out tn);
+                                        if (tn >= dt)
+                                        {
+                                            booking.Status = 1;
+                                            booking.Date = text.ToString();
+                                            await Bot.SendTextMessageAsync(id, "Выберите во сколько часов бронировать", replyMarkup: GetHours());
+                                        }
+                                        else
+                                        {
+                                            await Bot.SendTextMessageAsync(id, "Нельзя создавать бронь задним числом");
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        await Bot.SendTextMessageAsync(id, "Дата брони не распознона, введите дату в формате ДД.ММ.ГГГГ");
                                     }
                                     break;
                                 case 1:
-                                    regex = new Regex("[0-9]{1,2}:[0-9]{1,2}");
-                                    if (regex.IsMatch(text))//Ввели время брони
+                                    regex = new Regex("[0-9]{1,2} часов");
+                                    if (regex.IsMatch(text))//Ввели часы брони
                                     {
                                         booking.Status = 2;
                                         booking.Time = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "Введите количество гостей");
+                                        await Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: GetMinutes());
+                                    }
+                                    else
+                                    {
+                                        await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками");
                                     }
                                     break;
                                 case 2:
-                                    int _guests;
-                                    if (int.TryParse(text, out _guests))
+                                    regex = new Regex("[0-9]{2} минут");
+                                    if (regex.IsMatch(text))//Ввели минуты брони
                                     {
                                         booking.Status = 3;
-                                        booking.Guests = _guests;
-                                        await Bot.SendTextMessageAsync(id, "Введите номер телефона");
+                                        booking.Time = text.ToString();
+                                        await Bot.SendTextMessageAsync(id, "Введите количество гостей", replyMarkup: null);
+                                    }
+                                    else
+                                    {
+                                        await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками");
                                     }
                                     break;
                                 case 3:
-                                    regex = new Regex(@"(\+7|8|\b)[\(\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[)\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)");
-                                    if (regex.IsMatch(text))//Ввели номер телефона
+                                    byte _guests;
+
+                                    if (byte.TryParse(text, out _guests))//Ввели количество гостей
                                     {
                                         booking.Status = 4;
-                                        booking.Phone = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "На чьё имя бронировать?");
+                                        booking.Guests = _guests;
+                                        await Bot.SendTextMessageAsync(id, "Введите номер телефона");
+                                    }
+                                    else
+                                    {
+                                        await Bot.SendTextMessageAsync(id, "Количество гостей не распознано, введите целое положительное число не больше 255");
                                     }
                                     break;
                                 case 4:
+                                    regex = new Regex(@"(\+7|8|\b)[\(\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[)\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)");
+                                    if (regex.IsMatch(text))//Ввели номер телефона
+                                    {
+                                        booking.Status = 5;
+                                        booking.Phone = text.ToString();
+                                        await Bot.SendTextMessageAsync(id, "На чьё имя бронировать?");
+                                    }
+                                    else
+                                    {
+                                        await Bot.SendTextMessageAsync(id, "Номер телефона не распознан, попробйте один из следующих форматов: 81234567890, +71234567890");
+                                    }
+                                    break;
+                                case 5:
                                     booking.Name = text;
-                                    booking.Status = 5;
+                                    booking.Status = 6;
                                     booking.SendBooking();
                                     break;
                             }
@@ -128,6 +173,16 @@ namespace TelegramBot
                     }
                 }
             }
+        }
+
+        private static IReplyMarkup GetNullButtons()
+        {
+            var markup = new ReplyKeyboardMarkup(
+            new List<KeyboardButton>
+            {
+                null
+            });
+            return markup;
         }
 
         private static IReplyMarkup GetSettingsButtons(long id, int deep = 1)
@@ -152,6 +207,58 @@ namespace TelegramBot
                     Bot.SendTextMessageAsync(id, "?");
                     break;
             }
+            return markup;
+        }
+
+        private static IReplyMarkup GetHours()
+        {
+            var markup = new ReplyKeyboardMarkup(
+            new List<List<KeyboardButton>>
+            {
+                new List<KeyboardButton>
+                {
+                    new KeyboardButton("9 часов"),
+                    new KeyboardButton("10 часов"),
+                    new KeyboardButton("11 часов"),
+                    new KeyboardButton("12 часов")
+                },
+                new List<KeyboardButton>
+                {
+                    new KeyboardButton("13 часов"),
+                    new KeyboardButton("14 часов"),
+                    new KeyboardButton("15 часов"),
+                    new KeyboardButton("16 часов")
+                },
+                new List<KeyboardButton>
+                {
+                    new KeyboardButton("17 часов"),
+                    new KeyboardButton("18 часов"),
+                    new KeyboardButton("19 часов"),
+                    new KeyboardButton("20 часов")
+                },
+                new List<KeyboardButton>
+                {
+                    new KeyboardButton("21 час")
+                }
+
+            });
+
+            markup.ResizeKeyboard = true;
+            return markup;
+        }
+
+        private static IReplyMarkup GetMinutes()
+        {
+            var markup = new ReplyKeyboardMarkup(
+            new List<KeyboardButton>
+            {
+                new KeyboardButton("00 минут"),
+                new KeyboardButton("15 минут"),
+                new KeyboardButton("30 минут"),
+                new KeyboardButton("45 минут")
+            });
+
+            markup.ResizeKeyboard = true;
             return markup;
         }
 
@@ -200,8 +307,8 @@ namespace TelegramBot
             var markup = new ReplyKeyboardMarkup(
             new List<KeyboardButton>
             {
-                new KeyboardButton(Command1),
-                new KeyboardButton(Command2)
+                new KeyboardButton(bron),
+                new KeyboardButton(social)
             });
 
             markup.ResizeKeyboard = true;

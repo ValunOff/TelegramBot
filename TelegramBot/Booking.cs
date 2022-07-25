@@ -26,10 +26,10 @@ namespace TelegramBot
         {
             set
             {
-                string TimePattern = "[0-9]{1,2}:[0-9]{1,2}";
-                Regex regex = new Regex(TimePattern);
-                if (regex.IsMatch(value))
+                if (_status == 2)
                     _time = value;
+                else if (_status == 3)
+                    _time += " " + value;
             }
         }
         /// <summary> Количество гостей</summary>
@@ -44,13 +44,13 @@ namespace TelegramBot
                 //string PhoneNumberPattern = @"(8|\+7)[0-9]{1,2}:[0-9]{1,2}";
                 //Regex regex = new Regex(PhoneNumberPattern);
                 //if (regex.IsMatch(value))
-                    _phone = value;
+                _phone = value;
             }
         }
         /// <summary> Статус заполнения заявки на бронь
         /// <
         /// </summary>
-        public int Status 
+        public int Status
         {
             get
             {
@@ -58,7 +58,7 @@ namespace TelegramBot
             }
             set
             {
-                if (value >= 0 && value < 6)
+                if (value >= 0 && value < 7)
                 {
                     _status = value;
                 }
@@ -92,13 +92,13 @@ namespace TelegramBot
             Type.Add(new MessageEntity() { Type = MessageEntityType.Hashtag });
             byte[] qwe;
             qwe = Encoding.ASCII.GetBytes("#");
-            if(_status == 5 && _name != "")
-            foreach (var item in _addressee)
-            {
-                MessageEntity qweqwe = new MessageEntity();
-                qweqwe.Type = MessageEntityType.Hashtag;
-                _bot.SendTextMessageAsync(item, $"На имя {_name} забронирован стоик на "+ Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.','_')} в {_time} на {_guests} человек(а). Телефон:{_phone}",entities: Type);
-            }
+            if (_status == 6 && _name != "")
+                foreach (var item in _addressee)
+                {
+                    MessageEntity qweqwe = new MessageEntity();
+                    qweqwe.Type = MessageEntityType.Hashtag;
+                    _bot.SendTextMessageAsync(item, $"На имя {_name} забронирован стоик на " + Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.', '_')} в {_time} на {_guests} человек(а). Телефон:{_phone}", entities: Type);
+                }
             _status = 0;
             return true;
         }
