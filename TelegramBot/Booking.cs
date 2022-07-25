@@ -97,7 +97,7 @@ namespace TelegramBot
                 {
                     MessageEntity qweqwe = new MessageEntity();
                     qweqwe.Type = MessageEntityType.Hashtag;
-                    _bot.SendTextMessageAsync(item, $"На имя {_name} забронирован стоик на " + Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.', '_')} в {_time} на {_guests} человек(а). Телефон:{_phone}", entities: Type);
+                    _bot.SendTextMessageAsync(item, $"На имя {_name} забронирован стол на " + Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.', '_')} в {_time} на {_guests} человек(а). Телефон:{_phone}", entities: Type);
                 }
             _status = 0;
             return true;
