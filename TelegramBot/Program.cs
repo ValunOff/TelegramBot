@@ -90,7 +90,7 @@ namespace TelegramBot
                                     regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
                                     if (regex.IsMatch(text))//Ввели дату брони
                                     {
-                                        DateTime dt = DateTime.Now;
+                                        DateTime dt = DateTime.Now.Date;
                                         DateTime tn;
                                         DateTime.TryParse(text, out tn);
                                         if (tn >= dt)
