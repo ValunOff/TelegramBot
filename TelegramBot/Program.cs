@@ -13,6 +13,7 @@ namespace TelegramBot
 {
     class Program
     {
+        private static bool work = true;
         private const string Start = "/start";
         private const string Settings = "/settings";
         private const string Calendar = "/calendar";
@@ -36,9 +37,12 @@ namespace TelegramBot
                 }
             };
             Console.WriteLine("Start");
-            Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
+            while (true)
+            {
+                Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
+            }
 
-            Console.ReadLine();
+
         }
 
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
