@@ -71,6 +71,7 @@ namespace TelegramBot
         private string _name;
         private string _phone;
         private int _status;
+        private int _admins;
 
         private TelegramBotClient _bot;
         private List<int> _addressee = new List<int>();
@@ -80,12 +81,33 @@ namespace TelegramBot
             {
                 _bot = Bot;
                 _addressee.Add(611371555);//надо вести список получателей заявок
+                _admins = 611371555;
             }
             else
                 throw new Exception("Значение Bot не может быть Null");
         }
 
-        /// <summary> </summary>
+        /// <summary>Уменьшает статус заявки на 1 уровень. Нужно если пользователь на прошлом этапе совершил ошибку и хочет исправить</summary>
+        /// <returns>True - Успешно, False - Не успешно</returns>
+        public bool StepBack()
+        {
+            if (_status > 0)
+            {
+                _status -= 1;
+                return true;
+            } 
+            else
+            {
+                return false;
+            }
+        }
+        public bool BotIsBroke(Exception e)
+        {
+            _bot.SendTextMessageAsync(_admins,"Телеграм бот сломался");
+            _bot.SendTextMessageAsync(_admins, "Текст ошибки:" + e.Message);
+            return true;
+        }
+        /// <summary>Отправка заявки</summary>
         public bool SendBooking()
         {
             List<MessageEntity> Type = new List<MessageEntity>();

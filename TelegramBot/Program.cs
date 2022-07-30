@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,9 +20,10 @@ namespace TelegramBot
         private const string Start = "/start";
         private const string Settings = "/settings";
         private const string Calendar = "/calendar";
+        private const string StepBack = "Назад";
         private const string Password = "МашаМилаша"; //KEK
-        private const string bron = "/bron";
-        private const string social = "/social";
+        private const string bron = "Забронировать стол";
+        private const string social = "Соц. Сети";
         private const string Command3 = "Добавить получателя заявок";
         private const string Command4 = "Список получателей заявок";
         private const string Command5 = "Добавить Соц. Сети";
@@ -28,7 +32,9 @@ namespace TelegramBot
         static TelegramBotClient Bot = new TelegramBotClient("5495390508:AAHi-SDCzmafeP9NTZOPdlaXbu5zfcGqdF4");
         static Booking booking = new Booking(Bot);
         static void Main(string[] args)
-        {
+        { 
+            Console.WriteLine("TelegramBot Started");
+
             var receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new UpdateType[]
@@ -36,18 +42,23 @@ namespace TelegramBot
                     UpdateType.Message
                 }
             };
-            Console.WriteLine("Start");
-            while (true)
+            Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
+            while (true) // чтобы прога не останавливалась и не занимала консоль 
             {
-                Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
             }
-
-
         }
 
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
         {
-            throw new NotImplementedException();
+#if RELEASE
+            using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
+            {
+                writer.WriteLineAsync($"{DateTime.Today.ToString()} {arg2.Message}");
+            }
+            booking.BotIsBroke(arg2);
+#endif
+
+            throw arg2;
         }
 
         private static async Task UpdateHandler(ITelegramBotClient bot, Update update, CancellationToken arg3)
@@ -58,9 +69,19 @@ namespace TelegramBot
                 {
                     var text = update.Message.Text;
                     var id = update.Message.Chat.Id;
-                    Console.WriteLine($"id: {id.ToString()} text: {text}");
                     Regex regex;
-
+#if RELEASE
+                    using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
+                    {
+                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status} text: {text}");
+                    }
+#endif
+#if DEBUG
+                    using (StreamWriter writer = new StreamWriter("/log.txt", true))
+                    {
+                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status} text: {text}");
+                    }
+#endif
                     switch (text)
                     {
                         case Start:
@@ -69,12 +90,18 @@ namespace TelegramBot
                         case bron:
                             booking.Status = 0;
                             //Бронь стола
-                            await Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ");
+                            await Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ", replyMarkup: GetButtons());
+                            //CalendarPicker.Program.Main(null);
+                            break;
+                        case "/bron":
+                            booking.Status = 0;
+                            //Бронь стола
+                            await Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ", replyMarkup: GetButtons());
                             //CalendarPicker.Program.Main(null);
                             break;
                         case social:
                             booking.Status = 0;
-                            await Bot.SendTextMessageAsync(id, "VK: https://vk.com/ru_agronom");
+                            await Bot.SendTextMessageAsync(id, "VK: https://vk.com/ru_agronom", replyMarkup: GetButtons());
                             //соцсети
                             break;
                         case Settings:
@@ -87,6 +114,10 @@ namespace TelegramBot
                         case Calendar:
                             Programm.OnMessage(id);
                             break;
+                        case StepBack:
+                            booking.StepBack();
+                            StepBackMessage(id,booking.Status);
+                            break;
                         default:
                             switch (booking.Status)
                             {
@@ -96,7 +127,10 @@ namespace TelegramBot
                                     {
                                         DateTime dt = DateTime.Now.Date;
                                         DateTime tn;
-                                        DateTime.TryParse(text, out tn);
+                                        CultureInfo culture = CultureInfo.CreateSpecificCulture("ru-RU");
+                                        DateTimeStyles styles = DateTimeStyles.None;
+                                        DateTime.TryParse(text, culture, styles, out tn);
+                                        //Console.WriteLine($"dt: {dt} tn: {tn}");
                                         if (tn >= dt)
                                         {
                                             booking.Status = 1;
@@ -124,7 +158,7 @@ namespace TelegramBot
                                     }
                                     else
                                     {
-                                        await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками");
+                                        await Bot.SendTextMessageAsync(id, "Время не распозноно, воспользуйтесь кнопками", replyMarkup: GetHours());
                                     }
                                     break;
                                 case 2:
@@ -133,11 +167,11 @@ namespace TelegramBot
                                     {
                                         booking.Status = 3;
                                         booking.Time = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "Введите количество гостей", replyMarkup: null);
+                                        await Bot.SendTextMessageAsync(id, "Введите количество гостей", replyMarkup: GetNullButtons());
                                     }
                                     else
                                     {
-                                        await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками");
+                                        await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками", replyMarkup: GetMinutes());
                                     }
                                     break;
                                 case 3:
@@ -147,11 +181,11 @@ namespace TelegramBot
                                     {
                                         booking.Status = 4;
                                         booking.Guests = _guests;
-                                        await Bot.SendTextMessageAsync(id, "Введите номер телефона");
+                                        await Bot.SendTextMessageAsync(id, "Введите номер телефона", replyMarkup: GetNullButtons());
                                     }
                                     else
                                     {
-                                        await Bot.SendTextMessageAsync(id, "Количество гостей не распознано, введите целое положительное число не больше 255");
+                                        await Bot.SendTextMessageAsync(id, "Количество гостей не распознано, введите целое положительное число не больше 255", replyMarkup: GetNullButtons());
                                     }
                                     break;
                                 case 4:
@@ -160,17 +194,18 @@ namespace TelegramBot
                                     {
                                         booking.Status = 5;
                                         booking.Phone = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "На чьё имя бронировать?");
+                                        await Bot.SendTextMessageAsync(id, "На чьё имя бронировать?", replyMarkup: GetNullButtons());
                                     }
                                     else
                                     {
-                                        await Bot.SendTextMessageAsync(id, "Номер телефона не распознан, попробйте один из следующих форматов: 81234567890, +71234567890");
+                                        await Bot.SendTextMessageAsync(id, "Номер телефона не распознан, попробйте один из следующих форматов: 81234567890, +71234567890", replyMarkup: GetNullButtons());
                                     }
                                     break;
                                 case 5:
                                     booking.Name = text;
                                     booking.Status = 6;
                                     booking.SendBooking();
+                                    await Bot.SendTextMessageAsync(id, "Стол забронирован. Спасибо что воспользовались нашей услугой ", replyMarkup: GetNullButtons());
                                     break;
                             }
                             break;
@@ -179,13 +214,40 @@ namespace TelegramBot
             }
         }
 
+        private static void StepBackMessage(long id, int status)
+        {
+            switch (status)
+            {
+                case 0://нужно ввести дату
+                    Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ", replyMarkup: GetButtons());
+                    break;
+                case 1://нужно ввести часы
+                    Bot.SendTextMessageAsync(id, "Выберите во сколько часов бронировать", replyMarkup: GetHours());
+                    break;
+                case 2://нужно ввести время
+                    Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: GetMinutes());
+                    break;
+                case 3://нужно ввести кол-во гостей
+                    Bot.SendTextMessageAsync(id, "Введите количество гостей", replyMarkup: GetNullButtons());
+                    break;
+                case 4://нужно ввести номер телефона
+                    Bot.SendTextMessageAsync(id, "Введите номер телефона", replyMarkup: GetNullButtons()); 
+                    break;
+                case 5:
+                    break;
+                case 6:
+                    break;
+            }
+        }
+
         private static IReplyMarkup GetNullButtons()
         {
             var markup = new ReplyKeyboardMarkup(
             new List<KeyboardButton>
             {
-                null
+                new KeyboardButton(StepBack)
             });
+            markup.ResizeKeyboard = true;
             return markup;
         }
 
@@ -242,7 +304,8 @@ namespace TelegramBot
                 },
                 new List<KeyboardButton>
                 {
-                    new KeyboardButton("21 час")
+                    new KeyboardButton("21 час"),
+                    new KeyboardButton(StepBack)
                 }
 
             });
@@ -254,12 +317,18 @@ namespace TelegramBot
         private static IReplyMarkup GetMinutes()
         {
             var markup = new ReplyKeyboardMarkup(
-            new List<KeyboardButton>
-            {
-                new KeyboardButton("00 минут"),
-                new KeyboardButton("15 минут"),
-                new KeyboardButton("30 минут"),
-                new KeyboardButton("45 минут")
+            new List<List<KeyboardButton>> {
+                new List<KeyboardButton>
+                {
+                    new KeyboardButton("00 минут"),
+                    new KeyboardButton("15 минут"),
+                    new KeyboardButton("30 минут"),
+                    new KeyboardButton("45 минут")
+                },
+                new List<KeyboardButton>
+                {
+                    new KeyboardButton(StepBack)
+                }
             });
 
             markup.ResizeKeyboard = true;
