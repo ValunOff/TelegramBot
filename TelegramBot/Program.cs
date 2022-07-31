@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +16,6 @@ namespace TelegramBot
 {
     class Program
     {
-        private static bool work = true;
         private const string Start = "/start";
         private const string Settings = "/settings";
         private const string Calendar = "/calendar";
@@ -23,17 +23,27 @@ namespace TelegramBot
         private const string Password = "МашаМилаша"; //KEK
         private const string bron = "Забронировать стол";
         private const string social = "Соц. Сети";
+
+        private static bool work = true;
+        private static int deep = 1;
         private const string Command3 = "Добавить получателя заявок";
         private const string Command4 = "Список получателей заявок";
-        private const string Command5 = "Добавить Соц. Сети";
-        private const string Command6 = "Список Соц. Сети";
+        private const string Command5 = "Удалить получателя заявок";
+        private const string Command6 = "Изменить Соц. Сети";
+        private const string Command7 = "Список Соц. Сетей";
+        private const string Command8 = "Изменить график брони";
+        private const string Command9 = "Изменить пароль";
 
-        static TelegramBotClient Bot = new TelegramBotClient("5495390508:AAHi-SDCzmafeP9NTZOPdlaXbu5zfcGqdF4");
-        static Booking booking = new Booking(Bot);
+
+        //static string socialtext = "VK: https://vk.com/ru_agronom";
+        static Settings settings = new Settings();
+        static TelegramBotClient Bot = new TelegramBotClient(settings.Token);
+        static Booking booking = new Booking(Bot,settings);
+        
         static void Main(string[] args)
-        { 
+        {
+            //Console.WriteLine($"{settings.Token}");
             Console.WriteLine("TelegramBot Started");
-            
             var receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new UpdateType[]
@@ -42,7 +52,7 @@ namespace TelegramBot
                 }
             };
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
-            while (true) // чтобы прога не останавливалась и не занимала консоль 
+            while (true) // чтобы прога не останавливалась и не занимала консоль. Но надо поменять на синхронное ожидание сообщения чтобы цикл просто так не гулял и не нагружал сервак на 100%
             {
             }
         }
@@ -62,25 +72,25 @@ namespace TelegramBot
 
         private static async Task UpdateHandler(ITelegramBotClient bot, Update update, CancellationToken arg3)
         {
-            if (update.Type == UpdateType.Message)
+            if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
             {
-                if (update.Message.Type == MessageType.Text)
-                {
-                    var text = update.Message.Text;
-                    var id = update.Message.Chat.Id;
-                    Regex regex;
+                var text = update.Message.Text;
+                var id = update.Message.Chat.Id;
+                Regex regex;
 #if RELEASE
-                    using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
-                    {
-                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
-                    }
+                using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
+                {
+                    await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
+                }
 #endif
 #if DEBUG
-                    using (StreamWriter writer = new StreamWriter("/log.txt", true))
-                    {
-                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
-                    }
+                using (StreamWriter writer = new StreamWriter("/log.txt", true))
+                {
+                    await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
+                }
 #endif
+                if (work)
+                {
                     switch (text)
                     {
                         case Start:
@@ -100,7 +110,7 @@ namespace TelegramBot
                             break;
                         case social:
                             booking.Status = 0;
-                            await Bot.SendTextMessageAsync(id, "VK: https://vk.com/ru_agronom", replyMarkup: GetButtons());
+                            await Bot.SendTextMessageAsync(id, settings.Social, replyMarkup: GetButtons());
                             //соцсети
                             break;
                         case Settings:
@@ -108,6 +118,7 @@ namespace TelegramBot
                             break;
                         case Password:
                             booking.Status = 0;
+                            work = false;
                             await Bot.SendTextMessageAsync(id, "Вы вошли в настройки", replyMarkup: GetSettingsButtons(id));
                             break;
                         case Calendar:
@@ -115,96 +126,195 @@ namespace TelegramBot
                             break;
                         case StepBack:
                             booking.StepBack();
-                            StepBackMessage(id,booking.Status);
+                            StepBackMessage(id, booking.Status);
                             break;
                         default:
-                            switch (booking.Status)
-                            {
-                                case 0:
-                                    regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
-                                    if (regex.IsMatch(text))//Ввели дату брони
+                        switch (booking.Status)
+                        {
+                            case 0:
+                                regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
+                                if (regex.IsMatch(text))//Ввели дату брони
+                                {
+                                    DateTime dt = DateTime.Now.Date;
+                                    DateTime tn;
+                                    CultureInfo culture = CultureInfo.CreateSpecificCulture("ru-RU");
+                                    DateTimeStyles styles = DateTimeStyles.None;
+                                    DateTime.TryParse(text, culture, styles, out tn);
+                                    //Console.WriteLine($"dt: {dt} tn: {tn}");
+                                    if (tn >= dt)
                                     {
-                                        DateTime dt = DateTime.Now.Date;
-                                        DateTime tn;
-                                        CultureInfo culture = CultureInfo.CreateSpecificCulture("ru-RU");
-                                        DateTimeStyles styles = DateTimeStyles.None;
-                                        DateTime.TryParse(text, culture, styles, out tn);
-                                        //Console.WriteLine($"dt: {dt} tn: {tn}");
-                                        if (tn >= dt)
-                                        {
-                                            booking.Status = 1;
-                                            booking.Date = text.ToString();
-                                            await Bot.SendTextMessageAsync(id, "Выберите во сколько часов бронировать", replyMarkup: GetHours());
-                                        }
-                                        else
-                                        {
-                                            await Bot.SendTextMessageAsync(id, "Нельзя создавать бронь задним числом");
-                                        }
+                                        booking.Status = 1;
+                                        booking.Date = text.ToString();
+                                        await Bot.SendTextMessageAsync(id, "Выберите во сколько часов бронировать", replyMarkup: GetHours());
+                                    }
+                                    else
+                                    {
+                                        await Bot.SendTextMessageAsync(id, "Нельзя создавать бронь задним числом");
+                                    }
 
-                                    }
-                                    else
-                                    {
-                                        await Bot.SendTextMessageAsync(id, "Дата брони не распознона, введите дату в формате ДД.ММ.ГГГГ");
-                                    }
-                                    break;
+                                }
+                                else
+                                {
+                                    await Bot.SendTextMessageAsync(id, "Дата брони не распознона, введите дату в формате ДД.ММ.ГГГГ");
+                                }
+                                break;
+                            case 1:
+                                regex = new Regex("[0-9]{1,2} часов");
+                                if (regex.IsMatch(text))//Ввели часы брони
+                                {
+                                    booking.Status = 2;
+                                    booking.Time = text.ToString();
+                                    await Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: GetMinutes());
+                                }
+                                else
+                                {
+                                    await Bot.SendTextMessageAsync(id, "Время не распозноно, воспользуйтесь кнопками", replyMarkup: GetHours());
+                                }
+                                break;
+                            case 2:
+                                regex = new Regex("[0-9]{2} минут");
+                                if (regex.IsMatch(text))//Ввели минуты брони
+                                {
+                                    booking.Status = 3;
+                                    booking.Time = text.ToString();
+                                    await Bot.SendTextMessageAsync(id, "Введите количество гостей", replyMarkup: GetNullButtons());
+                                }
+                                else
+                                {
+                                    await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками", replyMarkup: GetMinutes());
+                                }
+                                break;
+                            case 3:
+                                byte _guests;
+
+                                if (byte.TryParse(text, out _guests))//Ввели количество гостей
+                                {
+                                    booking.Status = 4;
+                                    booking.Guests = _guests;
+                                    await Bot.SendTextMessageAsync(id, "Введите номер телефона", replyMarkup: GetNullButtons());
+                                }
+                                else
+                                {
+                                    await Bot.SendTextMessageAsync(id, "Количество гостей не распознано, введите целое положительное число не больше 255", replyMarkup: GetNullButtons());
+                                }
+                                break;
+                            case 4:
+                                regex = new Regex(@"(\+7|8|\b)[\(\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[)\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)");
+                                if (regex.IsMatch(text))//Ввели номер телефона
+                                {
+                                    booking.Status = 5;
+                                    booking.Phone = text.ToString();
+                                    await Bot.SendTextMessageAsync(id, "На чьё имя бронировать?", replyMarkup: GetNullButtons());
+                                }
+                                else
+                                {
+                                    await Bot.SendTextMessageAsync(id, "Номер телефона не распознан, попробйте один из следующих форматов: 81234567890, +71234567890", replyMarkup: GetNullButtons());
+                                }
+                                break;
+                            case 5:
+                                booking.Name = text;
+                                booking.Status = 6;
+                                booking.SendBooking();
+                                await Bot.SendTextMessageAsync(id, "Стол забронирован. Спасибо что воспользовались нашей услугой ", replyMarkup: GetNullButtons());
+                                break;
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    switch (text)
+                    {
+                        case Command3:
+                            deep = 2;
+                            await Bot.SendTextMessageAsync(id, "Введите логин и ФИО сотрудника для добавления(ФИО не обязательно). В формате @логин - ФИО",replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case Command4:
+                            await Bot.SendTextMessageAsync(id, settings.SelectPersonal(), replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case Command5:
+                            deep = 3;
+                            await Bot.SendTextMessageAsync(id, "Введите логин сотрудника для удаления(Можно несколько через запятую). В формате @логин", replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case Command6:
+                            deep = 4;
+                            await Bot.SendTextMessageAsync(id, "Введите, что отвечать при запросе Соц. Сетей", replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case Command7:
+                            await Bot.SendTextMessageAsync(id, settings.Social, replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case Command8:
+                            deep = 5;
+                            await Bot.SendTextMessageAsync(id, "Введите часы работы в формате 9-21 (круглые сутки 0-0)", replyMarkup: GetSettingsButtons(id));
+                            break;
+                        case StepBack:
+                            if (deep > 1)
+                                deep = 1;
+                            else
+                            {
+                                work = true;
+                                await Bot.SendTextMessageAsync(id, "Вы вышли из настроек", replyMarkup: GetButtons());
+                            }
+                            break;
+                        default:
+                            //прием команд
+                            if(text != "")
+                            switch (deep)
+                            {
                                 case 1:
-                                    regex = new Regex("[0-9]{1,2} часов");
-                                    if (regex.IsMatch(text))//Ввели часы брони
-                                    {
-                                        booking.Status = 2;
-                                        booking.Time = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: GetMinutes());
-                                    }
-                                    else
-                                    {
-                                        await Bot.SendTextMessageAsync(id, "Время не распозноно, воспользуйтесь кнопками", replyMarkup: GetHours());
-                                    }
+                                    await Bot.SendTextMessageAsync(id, "", replyMarkup: GetButtons());
                                     break;
                                 case 2:
-                                    regex = new Regex("[0-9]{2} минут");
-                                    if (regex.IsMatch(text))//Ввели минуты брони
+                                    string[] personalAdd = text.Split('-');
+                                    if (personalAdd.Length > 1)
                                     {
-                                        booking.Status = 3;
-                                        booking.Time = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "Введите количество гостей", replyMarkup: GetNullButtons());
+                                        string[] FIO = personalAdd[1].Split(' ');
+                                        switch (FIO.Length)
+                                        {
+                                            case 1:
+                                                settings.AddPersonal(personalAdd[0], FIO[0]);
+                                                break;
+                                            case 2:
+                                                settings.AddPersonal(personalAdd[0], FIO[0], FIO[1]);
+                                                break;
+                                            case 3:
+                                                settings.AddPersonal(personalAdd[0], FIO[0], FIO[1], FIO[2]);
+                                                break;
+                                            default:
+                                                settings.AddPersonal(personalAdd[0]);
+                                                break;
+                                        }
                                     }
-                                    else
-                                    {
-                                        await Bot.SendTextMessageAsync(id, "Время не распознона, воспользуйтесь кнопками", replyMarkup: GetMinutes());
-                                    }
+                                    await Bot.SendTextMessageAsync(id, $"логин {personalAdd[0]} добавлен", replyMarkup: GetNullButtons());
                                     break;
                                 case 3:
-                                    byte _guests;
-
-                                    if (byte.TryParse(text, out _guests))//Ввели количество гостей
+                                    string[] personalDel = text.Split(',');
+                                    string message = "";
+                                    if (personalDel.Length > 1)
                                     {
-                                        booking.Status = 4;
-                                        booking.Guests = _guests;
-                                        await Bot.SendTextMessageAsync(id, "Введите номер телефона", replyMarkup: GetNullButtons());
+                                        message = "Следующие логины были удалены: ";
+                                        foreach (var item in personalDel)
+                                        {
+                                            settings.RemovePersonal(item);
+                                            message += item + ", ";
+                                        }
                                     }
                                     else
                                     {
-                                        await Bot.SendTextMessageAsync(id, "Количество гостей не распознано, введите целое положительное число не больше 255", replyMarkup: GetNullButtons());
+                                        settings.RemovePersonal(personalDel[0]);
+                                        message = $"Логин {personalDel[0]} был удален";
                                     }
+                                    deep = 1;
+                                    await Bot.SendTextMessageAsync(id, message, replyMarkup: GetSettingsButtons(id));
                                     break;
                                 case 4:
-                                    regex = new Regex(@"(\+7|8|\b)[\(\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[)\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)");
-                                    if (regex.IsMatch(text))//Ввели номер телефона
-                                    {
-                                        booking.Status = 5;
-                                        booking.Phone = text.ToString();
-                                        await Bot.SendTextMessageAsync(id, "На чьё имя бронировать?", replyMarkup: GetNullButtons());
-                                    }
-                                    else
-                                    {
-                                        await Bot.SendTextMessageAsync(id, "Номер телефона не распознан, попробйте один из следующих форматов: 81234567890, +71234567890", replyMarkup: GetNullButtons());
-                                    }
+                                    settings.UdateSocial(text);
+                                    await Bot.SendTextMessageAsync(id, "Соц. Сети изменены", replyMarkup: GetSettingsButtons(id));
                                     break;
                                 case 5:
-                                    booking.Name = text;
-                                    booking.Status = 6;
-                                    booking.SendBooking();
-                                    await Bot.SendTextMessageAsync(id, "Стол забронирован. Спасибо что воспользовались нашей услугой ", replyMarkup: GetNullButtons());
+                                    //надо как то настроить изменение графика
+                                    break;
+                                default:
                                     break;
                             }
                             break;
@@ -256,18 +366,34 @@ namespace TelegramBot
             switch (deep)
             {
                 case 1:
-                    markup = new ReplyKeyboardMarkup(
+                markup = new ReplyKeyboardMarkup(
+                new List<List<KeyboardButton>>
+                {
                     new List<KeyboardButton>
                     {
                         new KeyboardButton("Добавить получателя заявок"),
-                        new KeyboardButton("Список получателей заявок"),
+                        new KeyboardButton("Список получателей заявок")
+
+                    },
+                    new List<KeyboardButton>
+                    {
+                        new KeyboardButton("Удалить получателя заявок"),
+                        new KeyboardButton("Изменить график брони")
+                    },
+                    new List<KeyboardButton>
+                    {
                         new KeyboardButton("Добавить Соц. Сети"),
-                        new KeyboardButton("Список Соц. Сети")
-                    });
-                    markup.ResizeKeyboard = true;
-                    break;
+                        new KeyboardButton("Список Соц. Сетей")
+                    },
+                    new List<KeyboardButton>
+                    {
+                        new KeyboardButton("Назад")
+                    }
+                });
+                markup.ResizeKeyboard = true;
+                break;
                 case 2:
-                    break;
+                break;
                 default:
                     Bot.SendTextMessageAsync(id, "?");
                     break;

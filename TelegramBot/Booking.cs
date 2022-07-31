@@ -47,9 +47,7 @@ namespace TelegramBot
                 _phone = value;
             }
         }
-        /// <summary> Статус заполнения заявки на бронь
-        /// <
-        /// </summary>
+        /// <summary> Статус заполнения заявки на бронь</summary>
         public int Status
         {
             get
@@ -74,13 +72,17 @@ namespace TelegramBot
         private int _admins;
 
         private TelegramBotClient _bot;
-        private List<int> _addressee = new List<int>();
-        public Booking(TelegramBotClient Bot)
+        private List<long> _addressee = new List<long>();
+        public Booking(TelegramBotClient Bot, Settings settings)
         {
             if (Bot != null)
             {
                 _bot = Bot;
-                _addressee.Add(611371555);//надо вести список получателей заявок
+                foreach (var item in settings.Personals)
+                {
+                    _addressee.Add(item.Id);
+                }
+                ;
                 _admins = 611371555;
             }
             else
