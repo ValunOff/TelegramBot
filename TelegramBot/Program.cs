@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +33,7 @@ namespace TelegramBot
         static void Main(string[] args)
         { 
             Console.WriteLine("TelegramBot Started");
-
+            
             var receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new UpdateType[]
@@ -53,7 +52,7 @@ namespace TelegramBot
 #if RELEASE
             using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
             {
-                writer.WriteLineAsync($"{DateTime.Today.ToString()} {arg2.Message}");
+                writer.WriteLineAsync(DateTime.Today.ToString() + " " + arg2.Message);
             }
             booking.BotIsBroke(arg2);
 #endif
@@ -73,13 +72,13 @@ namespace TelegramBot
 #if RELEASE
                     using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
                     {
-                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status} text: {text}");
+                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
                     }
 #endif
 #if DEBUG
                     using (StreamWriter writer = new StreamWriter("/log.txt", true))
                     {
-                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status} text: {text}");
+                        await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
                     }
 #endif
                     switch (text)
