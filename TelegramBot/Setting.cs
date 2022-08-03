@@ -12,6 +12,5 @@ namespace TelegramBot
         public List<Personal> Personals { get; set; }
 
         public List<List<KeyboardButton>> HoursButtons { get; set; }
-
     }
 }
