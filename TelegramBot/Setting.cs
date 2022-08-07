@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
@@ -9,7 +10,7 @@ namespace TelegramBot
 
         public string Social { set; get; }
 
-        public List<Personal> Personals { get; set; }
+        public List<Contact> Personals { get; set; }
 
         public List<List<KeyboardButton>> HoursButtons { get; set; }
     }

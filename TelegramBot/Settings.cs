@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
@@ -13,7 +14,7 @@ namespace TelegramBot
 
         public string Social { set; get; }
 
-        public List<Personal> Personals { get; set; }
+        public List<Contact> Personals { get; set; }
 
         public List<List<KeyboardButton>> HoursButtons { get; set; }
 
@@ -27,7 +28,7 @@ namespace TelegramBot
 #if DEBUG
             string fileName = "Settings.json";
 #endif
-            string jsonString = File.ReadAllText(fileName);
+            string jsonString = System.IO.File.ReadAllText(fileName);
             settings = JsonSerializer.Deserialize<Setting>(jsonString);
             Token = settings.Token;
             Social = settings.Social;
@@ -37,50 +38,78 @@ namespace TelegramBot
 
         /// <summary>Возвращает список сотрудников в формате @Логин - ФИО</summary>
         /// <returns>1 строка - 1 сотрудник</returns>
-        public string SelectPersonal()
+        //public string SelectPersonal()
+        //{
+        //    string personal = "";
+        //    foreach (var item in settings.Personals)
+        //    {
+        //        string fam = item.FirstName == "" ? "" : item.FirstName + " "; 
+        //        string name = item.LastName == "" ? "" : item.LastName + " ";
+        //        string otch = item.PhoneNumber == "" ? "" : item.PhoneNumber + " ";
+        //        personal += $"{item.Login} - {fam} {name} {otch}";
+        //    }
+        //    if (personal == "")
+        //        return "Список получателей пуст";
+        //    return personal;
+        //}
+
+        public bool RemovePersonal(string PhoneNumber)
         {
-            string personal = "";
-            foreach (var item in settings.Personals)
+            if((from p in settings.Personals
+                where p.PhoneNumber == PhoneNumber
+                select true).Count<bool>() == 1)
             {
-                string fam = item.Fam == "" ? "" : item.Fam + " ";
-                string name = item.Name == "" ? "" : item.Name + " ";
-                string otch = item.Otch == "" ? "" : item.Otch + " ";
-                personal += $"{item.Login} - {fam} {name} {otch}";
+                var itemToRemove = settings.Personals.Single(r => r.PhoneNumber == PhoneNumber);
+                settings.Personals.Remove(itemToRemove);
+
+#if RELEASE
+            string fileName = "/root/TelegramBot/Settings.json";
+#endif
+#if DEBUG
+                string fileName = "Settings.json";
+#endif
+                string jsonString = JsonSerializer.Serialize(settings);
+                System.IO.File.WriteAllText(fileName, jsonString);
+                return true;
             }
-            if (personal == "")
-                return "Список получателей пуст";
-            return personal;
+            return false;
         }
 
-        public void RemovePersonal(string Login)
+        public bool AddPersonal(long? UserId,string Vcard,string FirstName, string LastName = "",string PhoneNumber = "")
         {
-            if (Login[0] != '@')
-                Login = "@" + Login;
+            Contact personal = new Contact() { FirstName= FirstName,LastName= LastName ,PhoneNumber = PhoneNumber,UserId= UserId ,Vcard = Vcard };
+            if ((from p in settings.Personals
+                where p.PhoneNumber == PhoneNumber
+                select true).Count<bool>()!=1)
+            {
+                Personals.Add(personal);
+                settings.Personals.Add(personal);
+#if RELEASE
+            string fileName = "/root/TelegramBot/Settings.json";
+#endif
+#if DEBUG
+                string fileName = "Settings.json";
+#endif
+                string jsonString = JsonSerializer.Serialize(settings);
+                System.IO.File.WriteAllText(fileName, jsonString);
+                return true;
+            }
+            return false;
+        }
 
-            var itemToRemove = settings.Personals.Single(r => r.Login == Login);
-            settings.Personals.Remove(itemToRemove);
-
+        public bool UdateSocial(string socialText)
+        {
 #if RELEASE
             string fileName = "/root/TelegramBot/Settings.json";
 #endif
 #if DEBUG
             string fileName = "Settings.json";
 #endif
+            Social = socialText;
+            settings.Social = socialText;
             string jsonString = JsonSerializer.Serialize(settings);
-            File.WriteAllText(fileName, jsonString);
-        }
-
-        public void AddPersonal(string Login, string F ="",string I="",string O="")
-        {
-            if (Login[0] != '@')
-                Login = "@" + Login;
-            Personal personal = new Personal() { Login = Login, Fam = F, Name = I, Otch = O };
-            //settings.Personals.Add()
-        }
-
-        public void UdateSocial(string socialText)
-        {
-
+            System.IO.File.WriteAllText(fileName, jsonString);
+            return true;
         }
     }
 }

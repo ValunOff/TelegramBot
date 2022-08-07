@@ -72,17 +72,13 @@ namespace TelegramBot
         private int _admins;
 
         private TelegramBotClient _bot;
-        private List<long> _addressee = new List<long>();
-        public Booking(TelegramBotClient Bot, Settings settings)
+        private Settings settings;
+        public Booking(TelegramBotClient Bot,ref Settings settings)
         {
             if (Bot != null)
             {
                 _bot = Bot;
-                foreach (var item in settings.Personals)
-                {
-                    _addressee.Add(item.Id);
-                }
-                ;
+                this.settings = settings;
                 _admins = 611371555;
             }
             else
@@ -117,11 +113,11 @@ namespace TelegramBot
             byte[] qwe;
             qwe = Encoding.ASCII.GetBytes("#");
             if (_status == 6 && _name != "")
-                foreach (var item in _addressee)
+                foreach (var item in settings.Personals)
                 {
                     MessageEntity qweqwe = new MessageEntity();
                     qweqwe.Type = MessageEntityType.Hashtag;
-                    _bot.SendTextMessageAsync(item, $"На имя {_name} забронирован стол на " + Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.', '_')} в {_time} на {_guests} человек(а). Телефон:{_phone}", entities: Type);
+                    _bot.SendTextMessageAsync(item.UserId, $"На имя {_name} забронирован стол на " + Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.', '_')} в {_time} на {_guests} человек(а). Телефон:{_phone}", entities: Type);
                 }
             _status = 0;
             return true;

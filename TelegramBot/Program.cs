@@ -38,11 +38,10 @@ namespace TelegramBot
         //static string socialtext = "VK: https://vk.com/ru_agronom";
         static Settings settings = new Settings();
         static TelegramBotClient Bot = new TelegramBotClient(settings.Token);
-        static Booking booking = new Booking(Bot,settings);
+        static Booking booking = new Booking(Bot,ref settings);
         
         static void Main(string[] args)
         {
-            //Console.WriteLine($"{settings.Token}");
             Console.WriteLine("TelegramBot Started");
             var receiverOptions = new ReceiverOptions
             {
@@ -52,9 +51,7 @@ namespace TelegramBot
                 }
             };
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
-            while (true) // чтобы прога не останавливалась и не занимала консоль. Но надо поменять на синхронное ожидание сообщения чтобы цикл просто так не гулял и не нагружал сервак на 100%
-            {
-            }
+            Console.ReadLine();
         }
 
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
@@ -64,18 +61,21 @@ namespace TelegramBot
             {
                 writer.WriteLineAsync(DateTime.Today.ToString() + " " + arg2.Message);
             }
-            booking.BotIsBroke(arg2);
 #endif
+            booking.BotIsBroke(arg2);
 
             throw arg2;
         }
 
         private static async Task UpdateHandler(ITelegramBotClient bot, Update update, CancellationToken arg3)
         {
+            var id = update.Message.Chat.Id;
+
             if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
             {
                 var text = update.Message.Text;
-                var id = update.Message.Chat.Id;
+                
+
                 Regex regex;
 #if RELEASE
                 using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
@@ -227,14 +227,20 @@ namespace TelegramBot
                     {
                         case Command3:
                             deep = 2;
-                            await Bot.SendTextMessageAsync(id, "Введите логин и ФИО сотрудника для добавления(ФИО не обязательно). В формате @логин - ФИО",replyMarkup: GetSettingsButtons(id));
+                            await Bot.SendTextMessageAsync(id, "Отправьте контакт получателя заявок",replyMarkup: GetSettingsButtons(id));
                             break;
                         case Command4:
-                            await Bot.SendTextMessageAsync(id, settings.SelectPersonal(), replyMarkup: GetSettingsButtons(id));
+                            if (settings.Personals.Count > 0)
+                                foreach (var item in settings.Personals)
+                                {
+                                    await Bot.SendContactAsync(id, item.PhoneNumber, item.FirstName, item.LastName, item.Vcard, replyMarkup: GetSettingsButtons(id));
+                                }
+                            else
+                                await Bot.SendTextMessageAsync(id, "Список пуст", replyMarkup: GetSettingsButtons(id));
                             break;
                         case Command5:
                             deep = 3;
-                            await Bot.SendTextMessageAsync(id, "Введите логин сотрудника для удаления(Можно несколько через запятую). В формате @логин", replyMarkup: GetSettingsButtons(id));
+                            await Bot.SendTextMessageAsync(id, "Отправьте контакт сотрудника для удаления(Можно несколько через запятую). В формате @логин", replyMarkup: GetSettingsButtons(id));
                             break;
                         case Command6:
                             deep = 4;
@@ -261,54 +267,12 @@ namespace TelegramBot
                             if(text != "")
                             switch (deep)
                             {
-                                case 1:
-                                    await Bot.SendTextMessageAsync(id, "", replyMarkup: GetButtons());
-                                    break;
-                                case 2:
-                                    string[] personalAdd = text.Split('-');
-                                    if (personalAdd.Length > 1)
-                                    {
-                                        string[] FIO = personalAdd[1].Split(' ');
-                                        switch (FIO.Length)
-                                        {
-                                            case 1:
-                                                settings.AddPersonal(personalAdd[0], FIO[0]);
-                                                break;
-                                            case 2:
-                                                settings.AddPersonal(personalAdd[0], FIO[0], FIO[1]);
-                                                break;
-                                            case 3:
-                                                settings.AddPersonal(personalAdd[0], FIO[0], FIO[1], FIO[2]);
-                                                break;
-                                            default:
-                                                settings.AddPersonal(personalAdd[0]);
-                                                break;
-                                        }
-                                    }
-                                    await Bot.SendTextMessageAsync(id, $"логин {personalAdd[0]} добавлен", replyMarkup: GetNullButtons());
-                                    break;
-                                case 3:
-                                    string[] personalDel = text.Split(',');
-                                    string message = "";
-                                    if (personalDel.Length > 1)
-                                    {
-                                        message = "Следующие логины были удалены: ";
-                                        foreach (var item in personalDel)
-                                        {
-                                            settings.RemovePersonal(item);
-                                            message += item + ", ";
-                                        }
-                                    }
-                                    else
-                                    {
-                                        settings.RemovePersonal(personalDel[0]);
-                                        message = $"Логин {personalDel[0]} был удален";
-                                    }
-                                    deep = 1;
-                                    await Bot.SendTextMessageAsync(id, message, replyMarkup: GetSettingsButtons(id));
-                                    break;
+                                //case 1:
+                                //    await Bot.SendTextMessageAsync(id, "", replyMarkup: GetButtons());
+                                //    break;
                                 case 4:
                                     settings.UdateSocial(text);
+                                    deep = 1;
                                     await Bot.SendTextMessageAsync(id, "Соц. Сети изменены", replyMarkup: GetSettingsButtons(id));
                                     break;
                                 case 5:
@@ -319,6 +283,30 @@ namespace TelegramBot
                             }
                             break;
                     }
+                }
+            }
+            if (update.Message.Type == MessageType.Contact && !work)
+            {
+                string f = update.Message.Contact.FirstName;
+                string? l = update.Message.Contact.LastName;
+                string pn = update.Message.Contact.PhoneNumber;
+                long? UserId = update.Message.Contact.UserId;
+                string? vcard = update.Message.Contact.Vcard;
+                switch (deep)
+                {
+                    case 2: //Добавить контакт
+                        if(settings.AddPersonal(UserId, vcard, f, l, pn))
+                            await Bot.SendTextMessageAsync(id, "Контакт добавлен. Отправьте еще контакт для добавления или нажмите \"Назад\"");
+                        else
+                            await Bot.SendTextMessageAsync(id, "Контакт уже существует. Отправьте другой контакт для добавления или нажмите \"Назад\"");
+                        break;
+                    case 3:
+                        if(settings.RemovePersonal(pn))
+                            await Bot.SendTextMessageAsync(id, "Контакт удален. Отправьте еще контакт для удаления или нажмите \"Назад\"");
+                        else
+                            await Bot.SendTextMessageAsync(id, "Контакта не существует. Отправьте другой контакт для удаления или нажмите \"Назад\"");
+
+                        break;
                 }
             }
         }
@@ -371,23 +359,23 @@ namespace TelegramBot
                 {
                     new List<KeyboardButton>
                     {
-                        new KeyboardButton("Добавить получателя заявок"),
-                        new KeyboardButton("Список получателей заявок")
+                        new KeyboardButton(Command3),
+                        new KeyboardButton(Command4)
 
                     },
                     new List<KeyboardButton>
                     {
-                        new KeyboardButton("Удалить получателя заявок"),
-                        new KeyboardButton("Изменить график брони")
+                        new KeyboardButton(Command5),
+                        new KeyboardButton(Command8)
                     },
                     new List<KeyboardButton>
                     {
-                        new KeyboardButton("Добавить Соц. Сети"),
-                        new KeyboardButton("Список Соц. Сетей")
+                        new KeyboardButton(Command6),
+                        new KeyboardButton(Command7)
                     },
                     new List<KeyboardButton>
                     {
-                        new KeyboardButton("Назад")
+                        new KeyboardButton(StepBack)
                     }
                 });
                 markup.ResizeKeyboard = true;

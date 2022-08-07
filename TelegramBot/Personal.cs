@@ -4,12 +4,12 @@
     {
         public long Id { get; set; }
 
-        public string Login { get; set; }
+        public string? Vcard { get; set; }
 
-        public string Fam { get; set; } = "";
+        public string FirstName { get; set; } = "";
 
-        public string Name { get; set; } = "";
+        public string? LastName { get; set; } = "";
 
-        public string Otch { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
     }
 }
