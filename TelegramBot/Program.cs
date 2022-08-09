@@ -51,7 +51,7 @@ namespace TelegramBot
             
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
             
-            ManualResetEventSlim waiter = new ManualResetEventSlim(false);
+            ManualResetEventSlim waiter = new ManualResetEventSlim(false);//нашел решение как запустить бота и чтобы при этом терминал не занимать. Только нужно обязательно запускать бота в фоне иначе придется серв перезагружать 
             waiter.Wait();
 
             //Console.ReadLine();//в этом моменте бот перекрывает терминал на серве и не дает с ним ничего делать, пока не нажмешь какую нибудь кнопку. При нажатии на любую кнопку бот вырубается и терминал освобождается
