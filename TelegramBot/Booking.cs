@@ -26,7 +26,7 @@ namespace TelegramBot
         {
             set
             {
-                if (_status == 2)
+                if (_status == 2)//складываем часы и минуты
                     _time = value;
                 else if (_status == 3)
                     _time += " " + value;
@@ -41,6 +41,7 @@ namespace TelegramBot
         {
             set
             {
+                //по хорошему надо проверять на валидность чтобы кракозябры не записывали но я это делал извне поэтому закоментил часть тут потому что лодырь)))
                 //string PhoneNumberPattern = @"(8|\+7)[0-9]{1,2}:[0-9]{1,2}";
                 //Regex regex = new Regex(PhoneNumberPattern);
                 //if (regex.IsMatch(value))
@@ -69,7 +70,7 @@ namespace TelegramBot
         private string _name;
         private string _phone;
         private int _status;
-        private int _admins;
+        private int _admins;//надо сделать массив(а лучше List) c челами кому писать что бот сломался
 
         private TelegramBotClient _bot;
         private Settings settings;
@@ -79,7 +80,7 @@ namespace TelegramBot
             {
                 _bot = Bot;
                 this.settings = settings;
-                _admins = 611371555;
+                _admins = 611371555;//это я да) 
             }
             else
                 throw new Exception("Значение Bot не может быть Null");
@@ -108,15 +109,16 @@ namespace TelegramBot
         /// <summary>Отправка заявки</summary>
         public bool SendBooking()
         {
+            //это я телеграму говорю что в след сообщении точно есть хэштег
             List<MessageEntity> Type = new List<MessageEntity>();
             Type.Add(new MessageEntity() { Type = MessageEntityType.Hashtag });
+
             byte[] qwe;
-            qwe = Encoding.ASCII.GetBytes("#");
+            //хэштег используется для того чтобы в телеге можно было посмотреть сколько заказов сделано на определенный день просто зажатием на него
+            qwe = Encoding.ASCII.GetBytes("#");//у меня с хэштегом были проблемы И ВРОДЕБЫ это решение проблемы но это не точно
             if (_status == 6 && _name != "")
-                foreach (var item in settings.Personals)
+                foreach (var item in settings.Personals) //перебираем всех получателей заявок и отправляем каждому сообщение
                 {
-                    MessageEntity qweqwe = new MessageEntity();
-                    qweqwe.Type = MessageEntityType.Hashtag;
                     _bot.SendTextMessageAsync(item.UserId, $"На имя {_name} забронирован стол на " + Encoding.ASCII.GetString(qwe) + $"d{_date.Replace('.', '_')} в {_time} на {_guests} человек(а). Телефон:{_phone}", entities: Type);
                 }
             _status = 0;

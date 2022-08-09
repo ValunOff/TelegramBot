@@ -10,6 +10,10 @@ using Telegram.BotAPI.UpdatingMessages;
 
 namespace TelegramBot
 {
+    /// <summary>
+    /// тут каким то образом формируется календарь я сделал так чтобы он вызывался по команде /calendar и все больше я ничего тут не трогал :D
+    /// для меня это пока какая то магия
+    /// </summary>
     class Programm
     {
         private static BotClient bot = new BotClient("5495390508:AAHi-SDCzmafeP9NTZOPdlaXbu5zfcGqdF4"); //ethiowalia_bot

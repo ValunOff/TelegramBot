@@ -22,15 +22,15 @@ namespace TelegramBot
         private const string bron = "Забронировать стол";
         private const string social = "Соц. Сети";
 
-        private static bool work = true;
-        private static int deep = 1;
+        private static bool work = true; //стол бронируем и соц сети смотрим(true) или настройками занимаемя(false)
+        private static int deep = 1;  // это чтобы понимать на какую команду ответ записывать
         private const string Command3 = "Добавить получателя заявок";
         private const string Command4 = "Список получателей заявок";
         private const string Command5 = "Удалить получателя заявок";
         private const string Command6 = "Изменить Соц. Сети";
         private const string Command7 = "Список Соц. Сетей";
         private const string Command8 = "Изменить график брони";
-        private const string Command9 = "Изменить пароль";
+        //private const string Command9 = "Изменить пароль";
 
 
         //static string socialtext = "VK: https://vk.com/ru_agronom";
@@ -45,33 +45,34 @@ namespace TelegramBot
             {
                 AllowedUpdates = new UpdateType[]
                 {
-                    UpdateType.Message
+                    UpdateType.Message //это то какие типы событий отлавливает бот, их можно добавить через запятую по необходимости
                 }
             };
-
-            Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
-            Console.ReadLine();
+            
+            Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions); 
+            Console.ReadLine();//в этом моменте бот перекрывает терминал на серве и не дает с ним ничего делать, пока не нажмешь какую нибудь кнопку. При нажатии на любую кнопку бот вырубается и терминал освобождается
         }
 
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
-        {
-            settings.Logger(0, -1, arg2.Message);
-            booking.BotIsBroke(arg2);
+        {//если бот сломается то он будет выполнять эти действия перед тем как отрубиться
+            settings.Logger(0, -1, arg2.Message);//записываю ошибку в файл чтобы потом можно было понять что случилось
+            booking.BotIsBroke(arg2);//отправляю себе сообщение в тг если бот сломался(зачастую он не может этого делать, но если сможет то поч нет LUL)
 
             throw arg2;
         }
 
         private static async Task UpdateHandler(ITelegramBotClient bot, Update update, CancellationToken arg3)
         {
+
             var id = update.Message.Chat.Id;
 
-            if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
+            if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text) //если бот получил сообщение ввиде текста
             {
                 var text = update.Message.Text;
                 settings.Logger(id, booking.Status, text);
 
                 Regex regex;
-                if (work)
+                if (work)//проверяем бот работает или настройки меняет
                 {
                     switch (text)
                     {
@@ -117,11 +118,10 @@ namespace TelegramBot
                                 regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
                                 if (regex.IsMatch(text))//Ввели дату брони
                                 {
+                                    //вот эта херня с датами нужна потому что на серве даты хранятся как у пендосов мм.дд.гггг а у нас дд.мм.гггг и из за этого был тогда трабл с датами
                                     DateTime dt = DateTime.Now.Date;
                                     DateTime tn;
-                                    CultureInfo culture = CultureInfo.CreateSpecificCulture("ru-RU");
-                                    DateTimeStyles styles = DateTimeStyles.None;
-                                    DateTime.TryParse(text, culture, styles, out tn);
+                                    DateTime.TryParse(text, CultureInfo.CreateSpecificCulture("ru-RU"), DateTimeStyles.None, out tn);
                                     //Console.WriteLine($"dt: {dt} tn: {tn}");
                                     if (tn >= dt)
                                     {
@@ -181,7 +181,7 @@ namespace TelegramBot
                                 }
                                 break;
                             case 4:
-                                regex = new Regex(@"(\+7|8|\b)[\(\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[)\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)");
+                                regex = new Regex(@"(\+7|8|\b)[\(\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[)\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)[\s-]*(\d)");//лучше эту штуку не трогай я ее в инете нашел и она работает, но я тут вообще нихера не понимаю :D
                                 if (regex.IsMatch(text))//Ввели номер телефона
                                 {
                                     booking.Status = 5;
@@ -245,14 +245,11 @@ namespace TelegramBot
                             }
                             break;
                         default:
-                            //прием команд
+                            
                             if(text != "")
                             switch (deep)
                             {
-                                //case 1:
-                                //    await Bot.SendTextMessageAsync(id, "", replyMarkup: GetButtons());
-                                //    break;
-                                case 4:
+                                case 4://обновляем соцсети
                                     settings.UdateSocial(text);
                                     deep = 1;
                                     await Bot.SendTextMessageAsync(id, "Соц. Сети изменены", replyMarkup: GetSettingsButtons(id));
@@ -267,14 +264,16 @@ namespace TelegramBot
                     }
                 }
             }
-            if (update.Message.Type == MessageType.Contact && !work)
+
+            if (update.Message.Type == MessageType.Contact && !work) //если бот получил сообщение ввиде контакта и при этом он зашел в настройки(чтобы нельзя было добавлять кому попало)
             {
                 string f = update.Message.Contact.FirstName;
-                string? l = update.Message.Contact.LastName;
+                var l = update.Message.Contact.LastName;
                 string pn = update.Message.Contact.PhoneNumber;
-                long? UserId = update.Message.Contact.UserId;
-                string? vcard = update.Message.Contact.Vcard;
-                settings.Logger(id, booking.Status, $"FirstName: {f} LastName: {l} PhoneNumber: {pn} UserId: {UserId}");
+                var UserId = update.Message.Contact.UserId;
+                var vcard = update.Message.Contact.Vcard;
+                settings.Logger(id, booking.Status, $"FirstName: {f.ToString()} LastName: {l.ToString()} PhoneNumber: {pn} UserId: {UserId.ToString()}");
+
                 switch (deep)
                 {
                     case 2: //Добавить контакт
@@ -283,8 +282,8 @@ namespace TelegramBot
                         else
                             await Bot.SendTextMessageAsync(id, "Контакт уже существует. Отправьте другой контакт для добавления или нажмите \"Назад\"");
                         break;
-                    case 3:
-                        if(settings.RemovePersonal(pn))
+                    case 3://Удалить контакт
+                        if (settings.RemovePersonal(pn))
                             await Bot.SendTextMessageAsync(id, "Контакт удален. Отправьте еще контакт для удаления или нажмите \"Назад\"");
                         else
                             await Bot.SendTextMessageAsync(id, "Контакта не существует. Отправьте другой контакт для удаления или нажмите \"Назад\"");
@@ -366,46 +365,45 @@ namespace TelegramBot
                 case 2:
                 break;
                 default:
-                    Bot.SendTextMessageAsync(id, "?");
+                    Bot.SendTextMessageAsync(id, "?");//честно забыл что тут должно быть а при попыте разобраться ничего не понимаю :D
                     break;
             }
             return markup;
         }
 
-        private static IReplyMarkup GetHours()
+        private static IReplyMarkup GetHours()//вот тут описан грфик брони
         {
             var markup = new ReplyKeyboardMarkup(
             new List<List<KeyboardButton>>
             {
-                new List<KeyboardButton>
+                new List<KeyboardButton>//строка №1
                 {
                     new KeyboardButton("9 часов"),
                     new KeyboardButton("10 часов"),
                     new KeyboardButton("11 часов"),
                     new KeyboardButton("12 часов")
                 },
-                new List<KeyboardButton>
+                new List<KeyboardButton>//строка №2
                 {
                     new KeyboardButton("13 часов"),
                     new KeyboardButton("14 часов"),
                     new KeyboardButton("15 часов"),
                     new KeyboardButton("16 часов")
                 },
-                new List<KeyboardButton>
+                new List<KeyboardButton>//строка №3
                 {
                     new KeyboardButton("17 часов"),
                     new KeyboardButton("18 часов"),
                     new KeyboardButton("19 часов"),
                     new KeyboardButton("20 часов")
                 },
-                new List<KeyboardButton>
+                new List<KeyboardButton>//строка №4
                 {
                     new KeyboardButton("21 час"),
                     new KeyboardButton(StepBack)
                 }
 
             });
-
             markup.ResizeKeyboard = true;
             return markup;
         }
@@ -414,14 +412,14 @@ namespace TelegramBot
         {
             var markup = new ReplyKeyboardMarkup(
             new List<List<KeyboardButton>> {
-                new List<KeyboardButton>
+                new List<KeyboardButton>//строка №1
                 {
                     new KeyboardButton("00 минут"),
                     new KeyboardButton("15 минут"),
                     new KeyboardButton("30 минут"),
                     new KeyboardButton("45 минут")
                 },
-                new List<KeyboardButton>
+                new List<KeyboardButton>//строка №2
                 {
                     new KeyboardButton(StepBack)
                 }
@@ -431,7 +429,7 @@ namespace TelegramBot
             return markup;
         }
 
-        private static IReplyMarkup GetDays(int days = 14)
+        private static IReplyMarkup GetDays(int days = 14)//пытался сделать свой календарь но чето как то не пошло, но я к нему вернусь позже
         {
             var list = new List<KeyboardButton>();
             var listrow = new List<List<KeyboardButton>>();

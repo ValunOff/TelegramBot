@@ -1,5 +1,8 @@
 ﻿namespace TelegramBot
 {
+    /// <summary>
+    /// класс нужен только чтобы записать и считать контакты тех кого нужно уведомлять и служит для удобства
+    /// </summary>
     class Personal
     {
         public long Id { get; set; }

@@ -4,6 +4,9 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
+    /// <summary>
+    /// Класс нужен только чтобы записывать или считывать настройки с файла Settings.json
+    /// </summary>
     class Setting
     {
         public string Token { set; get; }
