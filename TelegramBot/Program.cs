@@ -49,8 +49,12 @@ namespace TelegramBot
                 }
             };
             
-            Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions); 
-            Console.ReadLine();//в этом моменте бот перекрывает терминал на серве и не дает с ним ничего делать, пока не нажмешь какую нибудь кнопку. При нажатии на любую кнопку бот вырубается и терминал освобождается
+            Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
+            
+            ManualResetEventSlim waiter = new ManualResetEventSlim(false);
+            waiter.Wait();
+
+            //Console.ReadLine();//в этом моменте бот перекрывает терминал на серве и не дает с ним ничего делать, пока не нажмешь какую нибудь кнопку. При нажатии на любую кнопку бот вырубается и терминал освобождается
         }
 
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
