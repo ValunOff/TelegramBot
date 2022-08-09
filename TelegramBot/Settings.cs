@@ -22,13 +22,7 @@ namespace TelegramBot
 
         public Settings()
         {
-#if RELEASE
-            string fileName = "/root/TelegramBot/Settings.json";
-#endif
-#if DEBUG
-            string fileName = "Settings.json";
-#endif
-            string jsonString = System.IO.File.ReadAllText(fileName);
+            string jsonString = System.IO.File.ReadAllText(GetFileName());
             settings = JsonSerializer.Deserialize<Setting>(jsonString);
             Token = settings.Token;
             Social = settings.Social;
@@ -62,14 +56,8 @@ namespace TelegramBot
                 var itemToRemove = settings.Personals.Single(r => r.PhoneNumber == PhoneNumber);
                 settings.Personals.Remove(itemToRemove);
 
-#if RELEASE
-            string fileName = "/root/TelegramBot/Settings.json";
-#endif
-#if DEBUG
-                string fileName = "Settings.json";
-#endif
                 string jsonString = JsonSerializer.Serialize(settings);
-                System.IO.File.WriteAllText(fileName, jsonString);
+                System.IO.File.WriteAllText(GetFileName(), jsonString);
                 return true;
             }
             return false;
@@ -84,14 +72,9 @@ namespace TelegramBot
             {
                 Personals.Add(personal);
                 settings.Personals.Add(personal);
-#if RELEASE
-            string fileName = "/root/TelegramBot/Settings.json";
-#endif
-#if DEBUG
-                string fileName = "Settings.json";
-#endif
+
                 string jsonString = JsonSerializer.Serialize(settings);
-                System.IO.File.WriteAllText(fileName, jsonString);
+                System.IO.File.WriteAllText(GetFileName(), jsonString);
                 return true;
             }
             return false;
@@ -99,17 +82,37 @@ namespace TelegramBot
 
         public bool UdateSocial(string socialText)
         {
-#if RELEASE
-            string fileName = "/root/TelegramBot/Settings.json";
-#endif
-#if DEBUG
-            string fileName = "Settings.json";
-#endif
             Social = socialText;
             settings.Social = socialText;
             string jsonString = JsonSerializer.Serialize(settings);
-            System.IO.File.WriteAllText(fileName, jsonString);
+            System.IO.File.WriteAllText(GetFileName(), jsonString);
             return true;
+        }
+
+        public void Logger(long Id,int status, string Text)
+        {
+#if RELEASE
+            using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
+            {
+                writer.WriteLineAsync($"{DateTime.Now}  id: {Id} status: {status} text: {Text}");
+            }
+#endif
+#if DEBUG
+            using (StreamWriter writer = new StreamWriter("/log.txt", true))
+            {
+                writer.WriteLineAsync($"{DateTime.Now}  id: {Id} status: {status} text: {Text}");
+            }
+#endif
+        }
+
+        private string GetFileName()
+        {
+#if RELEASE
+            return "/root/TelegramBot/Settings.json";
+#endif
+#if DEBUG
+            return "Settings.json";
+#endif
         }
     }
 }

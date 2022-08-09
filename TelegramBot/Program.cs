@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,18 +48,14 @@ namespace TelegramBot
                     UpdateType.Message
                 }
             };
+
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
             Console.ReadLine();
         }
 
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
         {
-#if RELEASE
-            using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
-            {
-                writer.WriteLineAsync(DateTime.Today.ToString() + " " + arg2.Message);
-            }
-#endif
+            settings.Logger(0, -1, arg2.Message);
             booking.BotIsBroke(arg2);
 
             throw arg2;
@@ -74,21 +68,9 @@ namespace TelegramBot
             if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
             {
                 var text = update.Message.Text;
-                
+                settings.Logger(id, booking.Status, text);
 
                 Regex regex;
-#if RELEASE
-                using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
-                {
-                    await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
-                }
-#endif
-#if DEBUG
-                using (StreamWriter writer = new StreamWriter("/log.txt", true))
-                {
-                    await writer.WriteLineAsync($"{DateTime.Today.ToString()}  id: {id.ToString()} status: {booking.Status.ToString()} text: {text}");
-                }
-#endif
                 if (work)
                 {
                     switch (text)
@@ -292,6 +274,7 @@ namespace TelegramBot
                 string pn = update.Message.Contact.PhoneNumber;
                 long? UserId = update.Message.Contact.UserId;
                 string? vcard = update.Message.Contact.Vcard;
+                settings.Logger(id, booking.Status, $"FirstName: {f} LastName: {l} PhoneNumber: {pn} UserId: {UserId}");
                 switch (deep)
                 {
                     case 2: //Добавить контакт
