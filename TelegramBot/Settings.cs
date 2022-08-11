@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -93,13 +94,13 @@ namespace TelegramBot
 #if RELEASE
             using (StreamWriter writer = new StreamWriter("/root/TelegramBot/log.txt", true))
             {
-                writer.WriteLineAsync($"{DateTime.Now}  id: {Id} status: {status} text: {Text}");
+                writer.WriteLineAsync($"{DateTime.Now.ToString(CultureInfo.GetCultureInfo("ru-RU"))}  id: {Id} status: {status} text: {Text}");
             }
 #endif
 #if DEBUG
             using (StreamWriter writer = new StreamWriter("/log.txt", true))
             {
-                writer.WriteLineAsync($"{DateTime.Now}  id: {Id} status: {status} text: {Text}");
+                writer.WriteLineAsync($"{DateTime.Now.ToString(CultureInfo.GetCultureInfo("ru-RU"))}  id: {Id} status: {status} text: {Text}");
             }
 #endif
         }
