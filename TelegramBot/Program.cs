@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,7 +38,8 @@ namespace TelegramBot
         static Settings settings = new Settings();
         static TelegramBotClient Bot = new TelegramBotClient(settings.Token);
         static Booking booking = new Booking(Bot,ref settings);
-        
+        static ManualResetEventSlim waiter = new ManualResetEventSlim(false);//нашел решение как запустить бота и чтобы при этом терминал не занимать. Только нужно обязательно запускать бота в фоне иначе придется серв перезагружать 
+
         static void Main(string[] args)
         {
             Console.WriteLine("TelegramBot Started");
@@ -50,9 +52,21 @@ namespace TelegramBot
             };
             
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
-            
-            ManualResetEventSlim waiter = new ManualResetEventSlim(false);//нашел решение как запустить бота и чтобы при этом терминал не занимать. Только нужно обязательно запускать бота в фоне иначе придется серв перезагружать 
+                
             waiter.Wait();
+
+            var fileName = Assembly.GetExecutingAssembly().Location;
+            Console.WriteLine(fileName);
+#if DEBUG
+            System.Diagnostics.Process.Start("C:\\Users\\User\\source\\repos\\TelegramBot\\TelegramBot\\bin\\Debug\\netcoreapp3.1\\TelegramBot.exe");
+
+#endif
+#if RELEASE
+            System.Diagnostics.Process.Start("/root/TelegramBot/TelegramBot");
+
+#endif
+            Environment.Exit(0);
+
 
             //Console.ReadLine();//в этом моменте бот перекрывает терминал на серве и не дает с ним ничего делать, пока не нажмешь какую нибудь кнопку. При нажатии на любую кнопку бот вырубается и терминал освобождается
         }
@@ -61,8 +75,10 @@ namespace TelegramBot
         {//если бот сломается то он будет выполнять эти действия перед тем как отрубиться
             settings.Logger(0, -1, arg2.Message);//записываю ошибку в файл чтобы потом можно было понять что случилось
             booking.BotIsBroke(arg2);//отправляю себе сообщение в тг если бот сломался(зачастую он не может этого делать, но если сможет то поч нет LUL)
+            waiter.Set();
 
-            throw arg2;
+            return Task.CompletedTask;
+            //throw arg2;
         }
 
         private static async Task UpdateHandler(ITelegramBotClient bot, Update update, CancellationToken arg3)
@@ -276,13 +292,16 @@ namespace TelegramBot
                 string pn = update.Message.Contact.PhoneNumber;
                 var UserId = update.Message.Contact.UserId;
                 var vcard = update.Message.Contact.Vcard;
-                settings.Logger(id, booking.Status, $"FirstName: {f.ToString()} LastName: {l.ToString()} PhoneNumber: {pn} UserId: {UserId.ToString()}");
+                settings.Logger(id, booking.Status, $"FirstName: {f} LastName: {l} PhoneNumber: {pn} UserId: {UserId}");
 
                 switch (deep)
                 {
                     case 2: //Добавить контакт
                         if(settings.AddPersonal(UserId, vcard, f, l, pn))
-                            await Bot.SendTextMessageAsync(id, "Контакт добавлен. Отправьте еще контакт для добавления или нажмите \"Назад\"");
+                            if(UserId == null)
+                                await Bot.SendTextMessageAsync(id, "Контакт добавлен, но UserId не был определен из за чего он не будет получать уведомление о заказе стола. Отправьте еще контакт для добавления или нажмите \"Назад\"");
+                            else
+                                await Bot.SendTextMessageAsync(id, "Контакт добавлен. Отправьте еще контакт для добавления или нажмите \"Назад\"");
                         else
                             await Bot.SendTextMessageAsync(id, "Контакт уже существует. Отправьте другой контакт для добавления или нажмите \"Назад\"");
                         break;

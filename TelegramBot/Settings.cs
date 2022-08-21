@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -51,7 +52,7 @@ namespace TelegramBot
         {
             if((from p in settings.Personals
                 where p.PhoneNumber == PhoneNumber
-                select true).Count<bool>() >= 1)//если есть контакт с таким же номером телефона то удаляем его. Если не проверять то бот будет ломаться
+                select true).Count<bool>() == 1)//если есть контакт с таким же номером телефона то удаляем его. Если не проверять то бот будет ломаться
             {
                 Personals.Remove(settings.Personals.Single(r => r.PhoneNumber == PhoneNumber));
 
@@ -71,7 +72,7 @@ namespace TelegramBot
             {
                 Personals.Add(personal);
 
-                settings.Personals.Add(personal);
+                //settings.Personals.Add(personal);
                 System.IO.File.WriteAllText(GetFileName(), JsonSerializer.Serialize(settings));//обновляем файл Settings.json
                 return true;
             }
@@ -98,7 +99,7 @@ namespace TelegramBot
             }
 #endif
 #if DEBUG
-            using (StreamWriter writer = new StreamWriter("/log.txt", true))
+            using (StreamWriter writer = new StreamWriter("log.txt", true))
             {
                 writer.WriteLineAsync($"{DateTime.Now.ToString(CultureInfo.GetCultureInfo("ru-RU"))}  id: {Id} status: {status} text: {Text}");
             }
