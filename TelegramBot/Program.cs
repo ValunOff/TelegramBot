@@ -42,7 +42,8 @@ namespace TelegramBot
 
         static void Main(string[] args)
         {
-            Console.WriteLine("TelegramBot Started");
+            //Console.Write("TelegramBot Started");
+            settings.Logger(0, -1, $"TelegramBot started");
             var receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new UpdateType[]
@@ -55,8 +56,8 @@ namespace TelegramBot
                 
             waiter.Wait();
 
-            var fileName = Assembly.GetExecutingAssembly().Location;
-            Console.WriteLine(fileName);
+            //var fileName = Assembly.GetExecutingAssembly().Location;
+            //Console.WriteLine(fileName);
 #if DEBUG
             System.Diagnostics.Process.Start("C:\\Users\\User\\source\\repos\\TelegramBot\\TelegramBot\\bin\\Debug\\netcoreapp3.1\\TelegramBot.exe");
 
@@ -242,7 +243,7 @@ namespace TelegramBot
                             break;
                         case Command5:
                             deep = 3;
-                            await Bot.SendTextMessageAsync(id, "Отправьте контакт сотрудника для удаления(Можно несколько через запятую). В формате @логин", replyMarkup: GetSettingsButtons(id));
+                            await Bot.SendTextMessageAsync(id, "Отправьте контакт сотрудника для удаления", replyMarkup: GetSettingsButtons(id));
                             break;
                         case Command6:
                             deep = 4;
