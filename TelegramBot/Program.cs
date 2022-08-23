@@ -98,7 +98,7 @@ namespace TelegramBot
                     switch (text)
                     {
                         case Start:
-                            await Bot.SendTextMessageAsync(id, "Здравствуй, давай перейдем сразу к делу!", replyMarkup: GetButtons());
+                            await Bot.SendTextMessageAsync(id, "Здравствуйте! Рады приветствовать в нашем баре! Для бронирования столика заполните форму", replyMarkup: GetButtons());
                             break;
                         case bron:
                             booking.Status = 0;
@@ -162,12 +162,15 @@ namespace TelegramBot
                                 }
                                 break;
                             case 1:
-                                regex = new Regex("[0-9]{1,2} часов");
+                                regex = new Regex("[0-9]{1,2} (часов|час|часа)");
                                 if (regex.IsMatch(text))//Ввели часы брони
                                 {
                                     booking.Status = 2;
                                     booking.Time = text.ToString();
-                                    await Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: GetMinutes());
+                                    if(text == "03 часа")
+                                        await Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: new ReplyKeyboardMarkup(new List<List<KeyboardButton>> {new List<KeyboardButton>{new KeyboardButton("00 минут"),new KeyboardButton(StepBack)}}) {ResizeKeyboard = true});
+                                    else
+                                        await Bot.SendTextMessageAsync(id, "Введите во сколько минут бронировать", replyMarkup: GetMinutes());
                                 }
                                 else
                                 {
@@ -218,7 +221,7 @@ namespace TelegramBot
                                 booking.Name = text;
                                 booking.Status = 6;
                                 booking.SendBooking();
-                                await Bot.SendTextMessageAsync(id, "Стол забронирован. Спасибо что воспользовались нашей услугой ", replyMarkup: GetNullButtons());
+                                await Bot.SendTextMessageAsync(id, "Отлично! Мы получили вашу заявку и забронировали стол! Ждём вас! (Бронь держится 15 минут)", replyMarkup: GetButtons());
                                 break;
                         }
                         break;
@@ -402,28 +405,22 @@ namespace TelegramBot
             {
                 new List<KeyboardButton>//строка №1
                 {
-                    new KeyboardButton("9 часов"),
-                    new KeyboardButton("10 часов"),
-                    new KeyboardButton("11 часов"),
-                    new KeyboardButton("12 часов")
+                    new KeyboardButton("18 часов"),
+                    new KeyboardButton("19 часов"),
+                    new KeyboardButton("20 часов"),
+                    new KeyboardButton("21 час")
                 },
                 new List<KeyboardButton>//строка №2
                 {
-                    new KeyboardButton("13 часов"),
-                    new KeyboardButton("14 часов"),
-                    new KeyboardButton("15 часов"),
-                    new KeyboardButton("16 часов")
+                    new KeyboardButton("22 часа"),
+                    new KeyboardButton("23 часа"),
+                    new KeyboardButton("00 часов"),
+                    new KeyboardButton("01 час")
                 },
                 new List<KeyboardButton>//строка №3
                 {
-                    new KeyboardButton("17 часов"),
-                    new KeyboardButton("18 часов"),
-                    new KeyboardButton("19 часов"),
-                    new KeyboardButton("20 часов")
-                },
-                new List<KeyboardButton>//строка №4
-                {
-                    new KeyboardButton("21 час"),
+                    new KeyboardButton("02 часа"),
+                    new KeyboardButton("03 часа"),
                     new KeyboardButton(StepBack)
                 }
 
@@ -447,9 +444,10 @@ namespace TelegramBot
                 {
                     new KeyboardButton(StepBack)
                 }
-            });
-
-            markup.ResizeKeyboard = true;
+            })
+            {
+                ResizeKeyboard = true
+            };
             return markup;
         }
 
