@@ -31,23 +31,6 @@ namespace TelegramBot
             HoursButtons = settings.HoursButtons;
         }
 
-        /// <summary>Возвращает список сотрудников в формате @Логин - ФИО</summary>
-        /// <returns>1 строка - 1 сотрудник</returns>
-        //public string SelectPersonal()
-        //{
-        //    string personal = "";
-        //    foreach (var item in settings.Personals)
-        //    {
-        //        string fam = item.FirstName == "" ? "" : item.FirstName + " "; 
-        //        string name = item.LastName == "" ? "" : item.LastName + " ";
-        //        string otch = item.PhoneNumber == "" ? "" : item.PhoneNumber + " ";
-        //        personal += $"{item.Login} - {fam} {name} {otch}";
-        //    }
-        //    if (personal == "")
-        //        return "Список получателей пуст";
-        //    return personal;
-        //}
-
         public bool RemovePersonal(string PhoneNumber)
         {
             if((from p in settings.Personals
@@ -55,8 +38,6 @@ namespace TelegramBot
                 select true).Count<bool>() == 1)//если есть контакт с таким же номером телефона то удаляем его. Если не проверять то бот будет ломаться
             {
                 Personals.Remove(settings.Personals.Single(r => r.PhoneNumber == PhoneNumber));
-
-                settings.Personals.Remove(settings.Personals.Single(r => r.PhoneNumber == PhoneNumber));
                 System.IO.File.WriteAllText(GetFileName(), JsonSerializer.Serialize(settings));//обновляем файл Settings.json
                 return true;
             }

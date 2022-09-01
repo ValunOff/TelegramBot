@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +32,6 @@ namespace TelegramBot
         private const string Command8 = "Изменить график брони";
         //private const string Command9 = "Изменить пароль";
 
-
         //static string socialtext = "VK: https://vk.com/ru_agronom";
         static Settings settings = new Settings();
         static TelegramBotClient Bot = new TelegramBotClient(settings.Token);
@@ -42,7 +40,6 @@ namespace TelegramBot
 
         static void Main(string[] args)
         {
-            //Console.Write("TelegramBot Started");
             settings.Logger(0, -1, $"TelegramBot started");
             var receiverOptions = new ReceiverOptions
             {
@@ -51,35 +48,28 @@ namespace TelegramBot
                     UpdateType.Message //это то какие типы событий отлавливает бот, их можно добавить через запятую по необходимости
                 }
             };
-            
             Bot.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions);
-                
             waiter.Wait();
+            Restart();
+        }
 
-            //var fileName = Assembly.GetExecutingAssembly().Location;
-            //Console.WriteLine(fileName);
+        private static void Restart()
+        {
 #if DEBUG
             System.Diagnostics.Process.Start("C:\\Users\\User\\source\\repos\\TelegramBot\\TelegramBot\\bin\\Debug\\netcoreapp3.1\\TelegramBot.exe");
-
 #endif
 #if RELEASE
             System.Diagnostics.Process.Start("/root/TelegramBot/TelegramBot");
-
 #endif
             Environment.Exit(0);
-
-
-            //Console.ReadLine();//в этом моменте бот перекрывает терминал на серве и не дает с ним ничего делать, пока не нажмешь какую нибудь кнопку. При нажатии на любую кнопку бот вырубается и терминал освобождается
         }
-
+        
         private static Task ErrorHandler(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
         {//если бот сломается то он будет выполнять эти действия перед тем как отрубиться
             settings.Logger(0, -1, arg2.Message);//записываю ошибку в файл чтобы потом можно было понять что случилось
             booking.BotIsBroke(arg2);//отправляю себе сообщение в тг если бот сломался(зачастую он не может этого делать, но если сможет то поч нет LUL)
             waiter.Set();
-
             return Task.CompletedTask;
-            //throw arg2;
         }
 
         private static async Task UpdateHandler(ITelegramBotClient bot, Update update, CancellationToken arg3)
@@ -449,46 +439,6 @@ namespace TelegramBot
                 ResizeKeyboard = true
             };
             return markup;
-        }
-
-        private static IReplyMarkup GetDays(int days = 14)//пытался сделать свой календарь но чето как то не пошло, но я к нему вернусь позже
-        {
-            var list = new List<KeyboardButton>();
-            var listrow = new List<List<KeyboardButton>>();
-
-            if (days > 7)
-            {
-                for (int i = 0; i < days / 7; i++)
-                {
-                    list.Clear();
-                    for (int j = 0; j < 7; j++)
-                    {
-                        list.Add(new KeyboardButton($"{DateTime.Now.Day + i * 7 + j}"));
-                    }
-
-                    listrow.Add(new List<KeyboardButton>(list));
-                }
-                if (days % 7 > 0)
-                {
-                    for (int j = 0; j < days % 7; j++)
-                    {
-                        list.Add(new KeyboardButton($"{DateTime.Now.Day + days / 7 + j}"));
-                    }
-                }
-                var markup = new ReplyKeyboardMarkup(listrow);
-                markup.ResizeKeyboard = true;
-                return markup;
-            }
-            else
-            {
-                for (int i = 0; i < days; i++)
-                {
-                    list.Add(new KeyboardButton($"{DateTime.Now.Day + i}"));
-                }
-                var markup = new ReplyKeyboardMarkup(list);
-                markup.ResizeKeyboard = true;
-                return markup;
-            }
         }
 
         private static IReplyMarkup GetButtons()
