@@ -12,7 +12,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
-    class Program
+    public class Program
     {
         private const string Start = "/start";
         private const string Settings = "/settings";
@@ -92,20 +92,11 @@ namespace TelegramBot
                             break;
                         case bron:
                             booking.Status = 0;
-                            //Бронь стола
                             await Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ", replyMarkup: GetButtons());
-                            //CalendarPicker.Program.Main(null);
-                            break;
-                        case "/bron":
-                            booking.Status = 0;
-                            //Бронь стола
-                            await Bot.SendTextMessageAsync(id, "Введите дату брони столика, В формате ДД.ММ.ГГГГ", replyMarkup: GetButtons());
-                            //CalendarPicker.Program.Main(null);
                             break;
                         case social:
                             booking.Status = 0;
                             await Bot.SendTextMessageAsync(id, settings.Social, replyMarkup: GetButtons());
-                            //соцсети
                             break;
                         case Settings:
                             await Bot.SendTextMessageAsync(id, "Введите пароль");
@@ -126,15 +117,12 @@ namespace TelegramBot
                         switch (booking.Status)
                         {
                             case 0:
-                                regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
-                                if (regex.IsMatch(text))//Ввели дату брони
+                               
+                                if (IsDate(text))//Ввели дату брони
                                 {
                                     //вот эта херня с датами нужна потому что на серве даты хранятся как у пендосов мм.дд.гггг а у нас дд.мм.гггг и из за этого был тогда трабл с датами
-                                    DateTime dt = DateTime.Now.Date;
-                                    DateTime tn;
-                                    DateTime.TryParse(text, CultureInfo.CreateSpecificCulture("ru-RU"), DateTimeStyles.None, out tn);
-                                    //Console.WriteLine($"dt: {dt} tn: {tn}");
-                                    if (tn >= dt)
+                                    DateTime.TryParse(text, CultureInfo.CreateSpecificCulture("ru-RU"), DateTimeStyles.None, out DateTime tn);
+                                    if (tn >= DateTime.Now.Date)
                                     {
                                         booking.Status = 1;
                                         booking.Date = text.ToString();
@@ -312,6 +300,17 @@ namespace TelegramBot
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Проверяет соответствует ли строка формату даты
+        /// </summary>
+        /// <param name="text">Строка с датой</param>
+        public static bool IsDate(string text)
+        {
+            Regex regex = new Regex("[0-9]{1,2}.[0-9]{1,2}.[0-9]{4}");
+            if (regex.IsMatch(text)) return true;
+            return false;
         }
 
         private static void StepBackMessage(long id, int status)
