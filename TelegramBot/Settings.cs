@@ -52,8 +52,6 @@ namespace TelegramBot
                 select true).Count<bool>()==0)//Если телефон чувака отсутствует в списке получателей заявок то добавляем его. Если не проверять и добавить чувака несколько раз то уведомления будут приходить несколько раз  P.s. надо бы проверить как будет себя вести этот блок кода если добавлять несколько контактов без номера телефона
             {
                 Personals.Add(personal);
-
-                //settings.Personals.Add(personal);
                 System.IO.File.WriteAllText(GetFileName(), JsonSerializer.Serialize(settings));//обновляем файл Settings.json
                 return true;
             }

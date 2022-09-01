@@ -284,6 +284,10 @@ namespace TelegramBot
                 string f = update.Message.Contact.FirstName;
                 var l = update.Message.Contact.LastName;
                 string pn = update.Message.Contact.PhoneNumber;
+                if (pn[0] != '+')
+                {
+                    pn = "+7" + pn.TrimStart('8');
+                }
                 var UserId = update.Message.Contact.UserId;
                 var vcard = update.Message.Contact.Vcard;
                 settings.Logger(id, booking.Status, $"FirstName: {f} LastName: {l} PhoneNumber: {pn} UserId: {UserId}");
