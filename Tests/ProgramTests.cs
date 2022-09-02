@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using TelegramBot;
 
 namespace Tests
@@ -7,9 +8,9 @@ namespace Tests
     public class ProgramTests
     {
         [TestMethod]
-        public void IsDateTest()
+        public void IsDatePastDate()
         {
-            string date = "12.12.2050";
+            string date = "01.09.2022";
             bool expected = true;
 
             Program qwe = new Program();
@@ -17,5 +18,138 @@ namespace Tests
 
             Assert.AreEqual(expected, actual);
         }
+        [TestMethod]
+        public void IsDateToDay()
+        {
+            string date = DateTime.Now.Date.ToString();
+            bool expected = true;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateDayErr()
+        {
+            string date = "40.10.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateDayZero()
+        {
+            string date = "0.10.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateDayNull()
+        {
+            string date = ".10.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateDayNegative()
+        {
+            string date = "-11.10.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateMonthErr()
+        {
+            string date = "12.15.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateMonthZero()
+        {
+            string date = "12.0.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateMonthNull()
+        {
+            string date = "12..2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateMonthNegative()
+        {
+            string date = "12.-11.2010";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateYearZero()
+        {
+            string date = "10.10.0";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateYearNull()
+        {
+            string date = "10.10.";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateYearNegative()
+        {
+            string date = "10.10.-2020";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+
     }
 }
