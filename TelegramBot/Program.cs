@@ -117,11 +117,9 @@ namespace TelegramBot
                         switch (booking.Status)
                         {
                             case 0:
-                               
-                                if (IsDate(text))//Ввели дату брони
+                                //вот эта херня с датами нужна потому что на серве даты хранятся как у пендосов мм.дд.гггг а у нас дд.мм.гггг и из за этого был тогда трабл с датами
+                                if (DateTime.TryParse(text, CultureInfo.CreateSpecificCulture("ru-RU"), DateTimeStyles.None, out DateTime tn))//Ввели дату брони
                                 {
-                                    //вот эта херня с датами нужна потому что на серве даты хранятся как у пендосов мм.дд.гггг а у нас дд.мм.гггг и из за этого был тогда трабл с датами
-                                    DateTime.TryParse(text, CultureInfo.CreateSpecificCulture("ru-RU"), DateTimeStyles.None, out DateTime tn);
                                     if (tn >= DateTime.Now.Date)
                                     {
                                         booking.Status = 1;
@@ -132,7 +130,6 @@ namespace TelegramBot
                                     {
                                         await Bot.SendTextMessageAsync(id, "Нельзя создавать бронь задним числом");
                                     }
-
                                 }
                                 else
                                 {
@@ -169,9 +166,7 @@ namespace TelegramBot
                                 }
                                 break;
                             case 3:
-                                byte _guests;
-
-                                if (byte.TryParse(text, out _guests))//Ввели количество гостей
+                                if (byte.TryParse(text, out byte _guests))//Ввели количество гостей
                                 {
                                     booking.Status = 4;
                                     booking.Guests = _guests;
@@ -300,17 +295,6 @@ namespace TelegramBot
                         break;
                 }
             }
-        }
-
-        /// <summary>
-        /// Проверяет соответствует ли строка формату даты
-        /// </summary>
-        /// <param name="text">Строка с датой</param>
-        public static bool IsDate(string text)
-        {
-            Regex regex = new Regex("(0[1-9]|[12][0-9]|3[01]).(0[1-9]|[1][0-2]).([1][9][0-9][0-9]|[2][0][0-9][0-9])");
-            if (regex.IsMatch(text)) return true;
-            return false;
         }
 
         private static void StepBackMessage(long id, int status)
