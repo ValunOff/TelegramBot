@@ -32,7 +32,7 @@ namespace Tests
         [TestMethod]
         public void IsDateDayErr()
         {
-            string date = "40.10.2010";
+            string date = "32.10.2010";
             bool expected = false;
 
             Program qwe = new Program();
@@ -120,7 +120,7 @@ namespace Tests
         [TestMethod]
         public void IsDateYearZero()
         {
-            string date = "10.10.0";
+            string date = "10.10.0000";
             bool expected = false;
 
             Program qwe = new Program();
@@ -143,6 +143,28 @@ namespace Tests
         public void IsDateYearNegative()
         {
             string date = "10.10.-2020";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateYearErrFuture()
+        {
+            string date = "10.10.2222";
+            bool expected = false;
+
+            Program qwe = new Program();
+            bool actual = Program.IsDate(date);
+
+            Assert.AreEqual(expected, actual);
+        }
+        [TestMethod]
+        public void IsDateYearErrPast()
+        {
+            string date = "10.10.1890";
             bool expected = false;
 
             Program qwe = new Program();
